@@ -1,0 +1,78 @@
+name: Testing Ansible code with ansible-lint & Molecule
+
+on: 
+  push: 
+  workflow_dispatch:
+   inputs:
+      role_name:
+        description: "Role name to pass as AWX extra var"
+        required: false
+        default: "webserver"
+    
+jobs:
+    test-ansible-lint:
+        runs-on: [self-hosted, linux, x64]
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Install Ansible
+          run: |
+            sudo apt update
+            sudo apt install -y ansible-lint
+
+        - name: Run ansible-lint
+          env:
+            ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+          run: |
+            ansible-lint ${{env.ANSIBLE_ROLES_PATH}}/webserver --exclude=./ansible/roles/webserver/molecule
+
+    test-ansible-molecule:
+        runs-on: [self-hosted, linux, x64]
+        needs: test-ansible-lint
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Install Ansible and Molecule
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y docker.io python3-pip
+            sudo python3 -m pip install --break-system-packages --ignore-installed ansible ansible-lint molecule "molecule-plugins[docker]"
+
+        - name: runner user
+          run: |
+            whoami
+            id
+            id -Gn
+     
+        - name: Start Docker and verify daemon
+          run: |
+            sudo systemctl start docker || sudo service docker start
+            sudo docker info
+
+        - name: Run Molecule tests
+          env:
+            ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+          run: |
+            cd "${{ env.ANSIBLE_ROLES_PATH }}/webserver"
+            sudo -E env "ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH}" molecule test
+
+    deploy-awx-template:
+        runs-on: [self-hosted, linux, x64]
+        needs: test-ansible-molecule
+        steps:
+          - name: Launch AWX job template
+            env:
+              AWX_URL: ${{ vars.AWX_URL }}
+              AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
+              AWX_TEMPLATE_ID: ${{ vars.AWX_TEMPLATE_ID }}
+              AWX_ROLE_NAME: ${{ inputs.role_name || 'webserver' }}
+            run: |
+              payload=$(jq -n \
+                --arg role_name "$AWX_ROLE_NAME" \
+                '{extra_vars: {role_name: $role_name}}')
+
+              curl --fail --silent --show-error -X POST \
+                "$AWX_URL/api/v2/job_templates/$AWX_TEMPLATE_ID/launch/" \
+                -H "Authorization: Bearer $AWX_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$payload"
