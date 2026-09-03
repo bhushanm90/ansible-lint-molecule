@@ -1,2 +1,2 @@
 ---
-nginx_listen_port: 8080
+webserver_listen_port: 8080

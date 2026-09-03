@@ -1,6 +1,6 @@
 server {
-    listen {{ nginx_listen_port }};
-    listen [::]:{{ nginx_listen_port }};
+    listen {{ webserver_listen_port }};
+    listen [::]:{{ webserver_listen_port }};
     server_name _;
 
     root /var/www/html;
