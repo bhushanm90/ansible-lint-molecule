@@ -3,23 +3,23 @@
 # checking for style violations, deprecated syntax, security risks, and best-practice violations.
 
 - block: 
-   name: Update apt cache
-   ansible.builtin.apt:
-     update_cache: true
+  - name: Update apt cache
+    ansible.builtin.apt:
+      update_cache: true
 
- - name: Install nginx
-   ansible.builtin.apt:
-     name: nginx
-     state: present
+  - name: Install nginx
+    ansible.builtin.apt:
+      name: nginx
+      state: present
 
- - name: Copy config file
-   ansible.builtin.copy:
-     src: nginx.conf
-     dest: /etc/nginx/nginx.conf
-     mode: '0644'
+  - name: Copy config file
+    ansible.builtin.copy:
+      src: nginx.conf
+      dest: /etc/nginx/nginx.conf
+      mode: '0644'
 
- - name: Start nginx
-   ansible.builtin.service:
-     name: nginx
-     state: started
+  - name: Start nginx
+    ansible.builtin.service:
+      name: nginx
+      state: started
   when: ansible_os_family == "Debian"
