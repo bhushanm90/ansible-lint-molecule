@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Molecule Testing - Complete Guide</title>
+  <style>body{font-family:system-ui,sans-serif;line-height:1.55;max-width:1000px;margin:2rem auto;padding:0 1rem}pre{overflow:auto;padding:1rem;background:#f4f4f4}code{font-family:ui-monospace,monospace}table{border-collapse:collapse;width:100%}td{border:1px solid #ccc;padding:.5rem;vertical-align:top}hr{border:0;border-top:1px solid #ccc;margin:2rem 0}</style>
+</head>
+<body>
+<h1>Molecule Testing - Complete Guide</h1>
+<h2>Overview</h2>
+<p>Molecule is an Ansible testing framework that automates role testing by:</p>
+<ol>
+<li>Creating isolated test environments (Docker containers)</li>
+<li>Applying your Ansible role</li>
+<li>Verifying idempotency (safe to run multiple times)</li>
+<li>Cleaning up resources</li>
+<hr>
+<h2>Test Phases Explained</h2>
+<h3>1. Discovery &amp; Prerun Phase</h3>
+<p><strong>Purpose:</strong> Initialize the testing environment and scan role structure</p>
+<p><strong>What Happens:</strong></p>
+<ul>
+<li>Scans your role structure and determines test matrix</li>
+<li>Sets <code>role_name_check=1</code> to validate role naming conventions</li>
+<li>Checks Python paths and Ansible collections</li>
+<li>Loads all installed Ansible collections</li>
+<li>Prepares test scenarios</li>
+<p><strong>Key Activities:</strong></p>
+<li>Role validation</li>
+<li>Collection version checking</li>
+<li>Test matrix creation</li>
+<hr>
+<h3>2. Dependency Resolution</h3>
+<p><strong>Purpose:</strong> Install external role and collection dependencies</p>
+<p><strong>What Happens:</strong></p>
+<li>Looks for <code>requirements.yml</code> file (external roles)</li>
+<li>Looks for <code>collections.yml</code> file (external collections)</li>
+<li>Downloads and installs any dependencies found</li>
+<p><strong>In Your Case:</strong></p>
+<li>No <code>requirements.yml</code> = 0 external roles needed</li>
+<li>No <code>collections.yml</code> = 0 external collections needed</li>
+<li>Status: &#226;œ“ Skipped (not required for simple nginx role)</li>
+<hr>
+<h3>3. Initial Destroy Phase</h3>
+<p><strong>Purpose:</strong> Clean up any leftover containers from previous test runs</p>
+<p><strong>What Happens Behind the Scenes:</strong></p>
+<li>Connects to Docker daemon</li>
+<li>Searches for existing containers named &quot;instance&quot;</li>
+<li>Stops running containers</li>
+<li>Removes container filesystems</li>
+<li>Tears down Docker networks</li>
+<li>Frees all resources</li>
+<p><strong>Result:</strong> Clean slate for fresh test</p>
+<hr>
+<h3>4. Syntax Validation Phase</h3>
+<p><strong>Purpose:</strong> Parse and validate playbook YAML before execution</p>
+<p><strong>What&#39;s Being Checked:</strong></p>
+<li>Valid YAML syntax and indentation</li>
+<li>Correct Ansible module usage</li>
+<li>No undefined variables</li>
+<li>Proper task structure</li>
+<li>Module parameter validity</li>
+<p><strong>File Validated:</strong></p>
+<pre><code>
+/ansible/roles/webserver/molecule/default/converge.yml
+</code></pre>
+<p><strong>Result:</strong> &#226;œ“ Playbook is syntactically correct</p>
+<hr>
+<h3>5. Create Phase &#226;&#173; (Most Important)</h3>
+<p><strong>Purpose:</strong> Provision Docker container for testing</p>
+<h4>Detailed Flow:</h4>
+<pre><code>
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 1. Connect to Docker Daemon             &#226;”‚
+&#226;”‚    (unix:///var/run/docker.sock)        &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+                     &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 2. Discover Local Docker Images         &#226;”‚
+&#226;”‚    Check cache for:                      &#226;”‚
+&#226;”‚    geerlingguy/docker-ubuntu2204-       &#226;”‚
+&#226;”‚    ansible:latest                        &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+                     &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 3. Determine CMD Directives             &#226;”‚
+&#226;”‚    Set container startup commands       &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+                     &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 4. Create Container Instance            &#226;”‚
+&#226;”‚    - Container Name: instance           &#226;”‚
+&#226;”‚    - Image: Ubuntu 22.04 with Ansible   &#226;”‚
+&#226;”‚    - Privileged: true                   &#226;”‚
+&#226;”‚    - Volume mounts:                     &#226;”‚
+&#226;”‚      /sys/fs/cgroup:/sys/fs/cgroup:rw  &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+                     &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 5. Wait for Container Ready             &#226;”‚
+&#226;”‚    - Boot systemd                        &#226;”‚
+&#226;”‚    - Start SSH daemon                   &#226;”‚
+&#226;”‚    - Verify SSH accessibility           &#226;”‚
+&#226;”‚    - Assign network configuration       &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+                     &#226;”‚
+              &#226;œ“ Container Ready
+</code></pre>
+<h4>Container Configuration:</h4>
+<table><tbody>
+<tr><td>Setting</td><td>Value</td><td>Purpose</td></tr>
+<tr><td>Image</td><td>geerlingguy/docker-ubuntu2204-ansible:latest</td><td>Pre-built Ubuntu 22.04 with Ansible</td></tr>
+<tr><td>Privileged</td><td>true</td><td>Required for systemd services</td></tr>
+<tr><td>CGgroup NS</td><td>host</td><td>Docker cgroup management</td></tr>
+<tr><td>Pre-built</td><td>true</td><td>Image already has Ansible, Python, SSH</td></tr>
+<h4>Container Environment:</h4>
+<li><strong>OS:</strong> Ubuntu 22.04 LTS</li>
+<li><strong>Installed:</strong> Python 3.10, Ansible 2.x, systemd, SSH daemon</li>
+<li><strong>SSH Access:</strong> Molecule connects via SSH (port 22)</li>
+<li><strong>Root Access:</strong> Container runs as root for package installation</li>
+<hr>
+<h3>6. Prepare Phase (Optional)</h3>
+<p><strong>Purpose:</strong> Set up preconditions before applying role</p>
+<p><strong>What It Does:</strong></p>
+<li>Executes optional <code>prepare.yml</code> playbook</li>
+<li>Could install dependencies</li>
+<li>Could create users/groups</li>
+<li>Could set up databases</li>
+<li>Could configure network</li>
+<p><strong>In Your Case:</strong></p>
+<li>Status: Skipped (no prepare playbook defined)</li>
+<hr>
+<h3>7. Converge Phase - First Run &#226;&#173; Key Testing</h3>
+<p><strong>Purpose:</strong> Apply your Ansible role to the test container</p>
+<h4>Step-by-Step Execution:</h4>
+<p><strong>Step 1: Gather Facts</strong></p>
+<pre><code>
+ACTION: Ansible connects to container via SSH
+COMMAND: ansible.builtin.gather_facts
+RESULT: Collects system information:
+  - Operating System: Ubuntu 22.04
+  - Packages installed
+  - Network interfaces
+  - Memory/CPU info
+  - Available users/groups
+PURPOSE: Data used in subsequent tasks
+</code></pre>
+<p><strong>Step 2: Update apt Cache</strong></p>
+<pre><code>
+TASK: webserver : Update apt cache
+MODULE: ansible.builtin.apt
+COMMAND: apt-get update (inside container)
+ACTION: 
+  - Connects to Ubuntu package repositories
+  - Downloads latest package metadata
+  - Refreshes package lists
+PURPOSE: Required because Docker container is fresh
+  - Container has stale package information
+  - New packages may be available
+  - Dependencies may have changed
+STATE CHANGE: changed=true (cache was updated)
+TIME: ~5-10 seconds
+</code></pre>
+<p><strong>Step 3: Install nginx</strong></p>
+<pre><code>
+TASK: webserver : Install nginx
+MODULE: ansible.builtin.apt
+COMMAND: apt-get install -y nginx
+ACTIONS:
+  1. Search in apt cache for &quot;nginx&quot;
+  2. Download nginx package (~1-2 MB)
+  3. Install nginx binary
+  4. Install dependencies:
+     - libpcre3
+     - openssl
+     - zlib1g
+  5. Create system user: www-data
+  6. Create directories:
+     - /etc/nginx/
+     - /var/log/nginx/
+     - /var/run/nginx/
+  7. Create init script for systemd
+  8. Install man pages
+STATE CHANGE: changed=true (nginx was installed)
+TIME: ~10-15 seconds
+</code></pre>
+<p><strong>Step 4: Copy Configuration File</strong></p>
+<pre><code>
+TASK: webserver : Copy config file
+MODULE: ansible.builtin.copy
+SOURCE: ansible/roles/webserver/files/nginx.conf
+DEST: /etc/nginx/nginx.conf (in container)
+MODE: 0644 (rw-r--r--)
+ACTIONS:
+  1. Read nginx.conf from your workspace
+  2. Transfer file via SSH to container
+  3. Write to /etc/nginx/nginx.conf
+  4. Set ownership to root:root
+  5. Set permissions to 644
+STATE CHANGE: changed=true (file was copied)
+VALIDATION: File content matches source exactly
+</code></pre>
+<p><strong>Step 5: Start nginx</strong></p>
+<pre><code>
+TASK: webserver : Start nginx
+MODULE: ansible.builtin.service
+COMMAND: systemctl start nginx
+ACTIONS:
+  1. Call systemd to start nginx service
+  2. Fork nginx master process
+  3. Fork nginx worker processes
+  4. Bind to port 80
+  5. Load configuration from /etc/nginx/nginx.conf
+STATE CHANGE: changed=true (service started)
+SERVICE STATUS: active (running)
+</code></pre>
+<h4>Converge Results:</h4>
+<pre><code>
+PLAY RECAP
+&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€
+instance             : ok=5  changed=4  unreachable=0  failed=0
+&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€
+&#226;œ“ All 5 tasks completed successfully
+&#226;œ“ 4 tasks made changes (nginx installed, config copied, service started)
+&#226;œ“ 0 unreachable hosts
+&#226;œ“ 0 failed tasks
+</code></pre>
+<hr>
+<h3>8. Idempotence Phase &#226;&#173; Critical Validation</h3>
+<p><strong>Purpose:</strong> Verify role is safe to run multiple times</p>
+<h4>What Happens:</h4>
+<pre><code>
+Same playbook runs AGAIN without container cleanup
+          &#226;†“
+Ansible connects to same container
+          &#226;†“
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ TASK: Update apt cache                      &#226;”‚
+&#226;”‚ Result: ok (no cache update needed)         &#226;”‚
+&#226;”‚ Changed: NO (cache already fresh)           &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+          &#226;†“
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ TASK: Install nginx                         &#226;”‚
+&#226;”‚ Result: ok (nginx already installed)        &#226;”‚
+&#226;”‚ Changed: NO (package state unchanged)       &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+          &#226;†“
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ TASK: Copy config file                      &#226;”‚
+&#226;”‚ Result: ok (file content identical)         &#226;”‚
+&#226;”‚ Changed: NO (file unchanged)                &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+          &#226;†“
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ TASK: Start nginx                           &#226;”‚
+&#226;”‚ Result: ok (service already running)        &#226;”‚
+&#226;”‚ Changed: NO (service already active)        &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+          &#226;†“
+RESULT: 5 tasks executed, 0 changes &#226;œ“ PERFECT
+</code></pre>
+<h4>Idempotence Results:</h4>
+<pre><code>
+PLAY RECAP
+&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€
+instance             : ok=5  changed=0  unreachable=0  failed=0
+&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€
+&#226;œ“ All 5 tasks executed successfully
+&#226;œ“ 0 tasks made changes (everything is already correct)
+&#226;œ“ No side effects
+&#226;œ“ Safe to run in production repeatedly
+</code></pre>
+<h4>Why This Matters:</h4>
+<tr><td>Scenario</td><td>Without Idempotence</td><td>With Idempotence &#226;œ“</td></tr>
+<tr><td>Run once</td><td>Works</td><td>Works</td></tr>
+<tr><td>Run twice</td><td>May fail or cause issues</td><td>No problems</td></tr>
+<tr><td>Run in loop</td><td>Unpredictable</td><td>Always safe</td></tr>
+<tr><td>CI/CD pipeline</td><td>Risky</td><td>Reliable</td></tr>
+<tr><td>Auto-remediation</td><td>Could break things</td><td>Stable</td></tr>
+<hr>
+<h3>9. Side Effects Phase (Optional)</h3>
+<p><strong>Purpose:</strong> Test for unintended consequences</p>
+<p><strong>What It Does:</strong></p>
+<li>Optional playbook: <code>side_effect.yml</code></li>
+<li>Could verify file permissions</li>
+<li>Could check service status</li>
+<li>Could validate logs</li>
+<li>Could test backup/restore</li>
+<p><strong>In Your Case:</strong></p>
+<li>Status: Skipped (no side_effect.yml defined)</li>
+<hr>
+<h3>10. Verify Phase (Optional)</h3>
+<p><strong>Purpose:</strong> Run test assertions and validations</p>
+<p><strong>What It Could Do:</strong></p>
+<pre><code>
+- name: Verify nginx is running
+  shell: systemctl is-active nginx
+  register: nginx_status
+  assert:
+    that:
+      - nginx_status.rc == 0
+
+- name: Verify nginx listening on port 80
+  shell: netstat -tuln | grep :80
+  register: port_check
+  assert:
+    that:
+      - port_check.rc == 0
+
+- name: Verify nginx config syntax
+  shell: nginx -t
+  register: config_test
+  assert:
+    that:
+      - config_test.rc == 0
+</code></pre>
+<p><strong>In Your Case:</strong></p>
+<li>Status: Skipped (no verify.yml defined)</li>
+<hr>
+<h3>11. Cleanup Phase (Optional)</h3>
+<p><strong>Purpose:</strong> Execute teardown before destroying container</p>
+<p><strong>What It Does:</strong></p>
+<li>Optional playbook: <code>cleanup.yml</code></li>
+<li>Could remove temporary files</li>
+<li>Could stop services gracefully</li>
+<li>Could backup logs</li>
+<li>Could clear caches</li>
+<p><strong>In Your Case:</strong></p>
+<li>Status: Skipped (no cleanup.yml defined)</li>
+<hr>
+<h3>12. Final Destroy Phase</h3>
+<p><strong>Purpose:</strong> Clean up test container and free resources</p>
+<h4>Container Teardown:</h4>
+<pre><code>
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 1. Stop Container                &#226;”‚
+&#226;”‚    SIGTERM &#226;†’ nginx shutdown      &#226;”‚
+&#226;”‚    systemd graceful stop         &#226;”‚
+&#226;”‚    Processes terminate           &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+             &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 2. Remove Container              &#226;”‚
+&#226;”‚    Delete container filesystem   &#226;”‚
+&#226;”‚    Free storage space            &#226;”‚
+&#226;”‚    Release memory                &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+             &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ 3. Clean Up Networking           &#226;”‚
+&#226;”‚    Disconnect from networks      &#226;”‚
+&#226;”‚    Release IP addresses          &#226;”‚
+&#226;”‚    Remove virtual interfaces     &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+             &#226;”‚
+         &#226;œ“ Complete
+</code></pre>
+<h4>Resource Cleanup:</h4>
+<li><strong>Docker Container:</strong> Removed</li>
+<li><strong>Volumes:</strong> Unmounted</li>
+<li><strong>Networks:</strong> Disconnected</li>
+<li><strong>IP Addresses:</strong> Released</li>
+<li><strong>Storage:</strong> Freed</li>
+<li><strong>Memory:</strong> Freed</li>
+<hr>
+<h2>Complete System Architecture</h2>
+<h3>Network &amp; Data Flow:</h3>
+<pre><code>
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ YOUR WORKSPACE (Windows/Linux/Mac)                      &#226;”‚
+&#226;”‚  &#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;” &#226;”‚
+&#226;”‚  &#226;”‚ Ansible Role Files                                 &#226;”‚ &#226;”‚
+&#226;”‚  &#226;”‚ &#226;”œ&#226;”€&#226;”€ tasks/main.yml                                 &#226;”‚ &#226;”‚
+&#226;”‚  &#226;”‚ &#226;”œ&#226;”€&#226;”€ files/nginx.conf                               &#226;”‚ &#226;”‚
+&#226;”‚  &#226;”‚ &#226;”œ&#226;”€&#226;”€ vars/main.yml                                  &#226;”‚ &#226;”‚
+&#226;”‚  &#226;”‚ &#226;””&#226;”€&#226;”€ molecule/default/molecule.yml                  &#226;”‚ &#226;”‚
+&#226;”‚  &#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜ &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+                     &#226;”‚ molecule test
+                     &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ DOCKER DAEMON                                          &#226;”‚
+&#226;”‚ (Local machine or CI/CD runner)                       &#226;”‚
+&#226;”‚ &#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”  &#226;”‚
+&#226;”‚ &#226;”‚ Image Registry (Docker Hub)                      &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ geerlingguy/docker-ubuntu2204-ansible:latest    &#226;”‚  &#226;”‚
+&#226;”‚ &#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜  &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#172;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+                     &#226;”‚
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;–&#188;&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ TEST CONTAINER (Ubuntu 22.04)                         &#226;”‚
+&#226;”‚ &#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”  &#226;”‚
+&#226;”‚ &#226;”‚ systemd (init system)                            &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ Python 3.x                                       &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ Ansible 2.x                                      &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ SSH daemon (port 22)                             &#226;”‚  &#226;”‚
+&#226;”‚ &#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜  &#226;”‚
+&#226;”‚                                                        &#226;”‚
+&#226;”‚ &#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”  &#226;”‚
+&#226;”‚ &#226;”‚ Testing Phase                                    &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚                                                  &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ 1. Gather Facts                                  &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ 2. Update apt cache                              &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ 3. Install nginx                                 &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ 4. Copy nginx.conf                               &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ 5. Start nginx service                           &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚                                                  &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ VERIFY: Run again (idempotency)                 &#226;”‚  &#226;”‚
+&#226;”‚ &#226;”‚ CLEANUP: Destroy container                       &#226;”‚  &#226;”‚
+&#226;”‚ &#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜  &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+</code></pre>
+<hr>
+<h2>Package Installation Deep Dive</h2>
+<h3>APT (Advanced Package Tool) Flow:</h3>
+<pre><code>
+STEP 1: Update apt cache
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ apt-get update          &#226;”‚
+&#226;”œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#164;
+&#226;”‚ Downloads from:         &#226;”‚
+&#226;”‚ - archive.ubuntu.com    &#226;”‚
+&#226;”‚ - security.ubuntu.com   &#226;”‚
+&#226;”‚ - ppa repositories      &#226;”‚
+&#226;”œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#164;
+&#226;”‚ Creates local database: &#226;”‚
+&#226;”‚ /var/cache/apt/         &#226;”‚
+&#226;”œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#164;
+&#226;”‚ Lists available         &#226;”‚
+&#226;”‚ packages (nginx, etc)   &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+
+STEP 2: Install nginx
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ apt-get install nginx   &#226;”‚
+&#226;”œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”&#164;
+&#226;”‚ 1. Search apt cache     &#226;”‚
+&#226;”‚ 2. Find nginx package   &#226;”‚
+&#226;”‚ 3. Check dependencies   &#226;”‚
+&#226;”‚ 4. Download .deb file   &#226;”‚
+&#226;”‚ 5. Verify checksum      &#226;”‚
+&#226;”‚ 6. Extract files        &#226;”‚
+&#226;”‚ 7. Install binary       &#226;”‚
+&#226;”‚ 8. Set permissions      &#226;”‚
+&#226;”‚ 9. Create system user   &#226;”‚
+&#226;”‚ 10. Create directories  &#226;”‚
+&#226;”‚ 11. Generate configs    &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+
+STEP 3: Service registration
+&#226;”Œ&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”
+&#226;”‚ systemd knows nginx     &#226;”‚
+&#226;”‚ /etc/systemd/system/    &#226;”‚
+&#226;”‚ nginx.service exists    &#226;”‚
+&#226;”‚                         &#226;”‚
+&#226;”‚ Can now:                &#226;”‚
+&#226;”‚ systemctl start nginx   &#226;”‚
+&#226;”‚ systemctl stop nginx    &#226;”‚
+&#226;”‚ systemctl status nginx  &#226;”‚
+&#226;””&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”€&#226;”˜
+</code></pre>
+<hr>
+<h2>Test Results Summary</h2>
+<h3>Success Metrics:</h3>
+<pre><code>
+CONVERGENCE TEST
+&#226;”œ&#226;”€&#226;”€ Gathering Facts:        &#226;œ“ ok
+&#226;”œ&#226;”€&#226;”€ Update apt cache:       &#226;œ“ changed
+&#226;”œ&#226;”€&#226;”€ Install nginx:          &#226;œ“ changed
+&#226;”œ&#226;”€&#226;”€ Copy config file:       &#226;œ“ changed
+&#226;”œ&#226;”€&#226;”€ Start nginx:            &#226;œ“ changed
+&#226;””&#226;”€&#226;”€ RESULT:                 &#226;œ“ SUCCESS (4 changes)
+
+IDEMPOTENCE TEST
+&#226;”œ&#226;”€&#226;”€ Gathering Facts:        &#226;œ“ ok
+&#226;”œ&#226;”€&#226;”€ Update apt cache:       &#226;œ“ ok (0 changes)
+&#226;”œ&#226;”€&#226;”€ Install nginx:          &#226;œ“ ok (0 changes)
+&#226;”œ&#226;”€&#226;”€ Copy config file:       &#226;œ“ ok (0 changes)
+&#226;”œ&#226;”€&#226;”€ Start nginx:            &#226;œ“ ok (0 changes)
+&#226;””&#226;”€&#226;”€ RESULT:                 &#226;œ“ SUCCESS (0 changes)
+</code></pre>
+<h3>Overall Test Summary:</h3>
+<tr><td>Metric</td><td>Result</td></tr>
+<tr><td>Total Actions</td><td>12</td></tr>
+<tr><td>Successful</td><td>6</td></tr>
+<tr><td>Failed</td><td>0</td></tr>
+<tr><td>Skipped</td><td>0</td></tr>
+<tr><td>Missing (optional)</td><td>7</td></tr>
+<tr><td>Status</td><td>&#226;œ… PASSED</td></tr>
+<hr>
+<h2>Key Takeaways</h2>
+<h3>Why Molecule Testing Matters:</h3>
+<ol>
+<li><strong>Catches Bugs Early</strong></li>
+<ul>
+<li>Tests before commits</li>
+<li>Validates in clean environment</li>
+<li>No surprises in production</li>
+<ol>
+<li><strong>Ensures Idempotency</strong></li>
+<ul>
+<li>Safe to run multiple times</li>
+<li>No unintended side effects</li>
+<li>Suitable for auto-remediation</li>
+<ol>
+<li><strong>Validates Configuration</strong></li>
+<ul>
+<li>nginx installed correctly</li>
+<li>Configuration files in place</li>
+<li>Service running properly</li>
+<ol>
+<li><strong>Reproducible Testing</strong></li>
+<ul>
+<li>Same test every time</li>
+<li>Different OS/environment? Use different image</li>
+<li>CI/CD integration ready</li>
+<ol>
+<li><strong>Documentation</strong></li>
+<ul>
+<li>Role behavior documented</li>
+<li>Tests serve as examples</li>
+<li>New developers understand intent</li>
+<hr>
+<h2>Common Molecule Files</h2>
+<pre><code>
+ansible/roles/webserver/
+&#226;”œ&#226;”€&#226;”€ molecule/
+&#226;”‚   &#226;””&#226;”€&#226;”€ default/
+&#226;”‚       &#226;”œ&#226;”€&#226;”€ molecule.yml          # Molecule config
+&#226;”‚       &#226;”œ&#226;”€&#226;”€ converge.yml          # Apply role
+&#226;”‚       &#226;”œ&#226;”€&#226;”€ verify.yml            # (optional) Tests
+&#226;”‚       &#226;”œ&#226;”€&#226;”€ prepare.yml           # (optional) Setup
+&#226;”‚       &#226;”œ&#226;”€&#226;”€ cleanup.yml           # (optional) Teardown
+&#226;”‚       &#226;””&#226;”€&#226;”€ side_effect.yml       # (optional) Side effects
+&#226;”œ&#226;”€&#226;”€ tasks/
+&#226;”‚   &#226;””&#226;”€&#226;”€ main.yml                  # Role tasks
+&#226;”œ&#226;”€&#226;”€ files/
+&#226;”‚   &#226;””&#226;”€&#226;”€ nginx.conf                # Config files
+&#226;”œ&#226;”€&#226;”€ vars/
+&#226;”‚   &#226;””&#226;”€&#226;”€ main.yml                  # Variables
+&#226;””&#226;”€&#226;”€ README.md                      # Documentation
+</code></pre>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Common Issues:</h3>
+<tr><td>Error</td><td>Cause</td><td>Solution</td></tr>
+<tr><td>Docker not running</td><td>Docker daemon not started</td><td>Start Docker: <code>docker ps</code></td></tr>
+<tr><td>apt package not found</td><td>Cache not updated</td><td>Add apt update task</td></tr>
+<tr><td>Connection refused</td><td>Container not ready</td><td>Check container networking</td></tr>
+<tr><td>Idempotence failed</td><td>Task makes changes repeatedly</td><td>Investigate task logic</td></tr>
+<tr><td>File not found</td><td>Wrong path in role</td><td>Verify files/ directory exists</td></tr>
+<hr>
+<h2>Conclusion</h2>
+<p>Molecule automates the entire lifecycle of testing Ansible roles:</p>
+<ol>
+<li>Creates clean test environment (Docker)</li>
+<li>Applies your role</li>
+<li>Verifies it works</li>
+<li>Verifies it&#39;s repeatable</li>
+<li>Cleans up resources</li>
+<p><strong>Result:</strong> Confidence that your role works correctly and safely in production!</p>
+<hr>
+<p><strong>Generated:</strong> 2026-09-02  </p>
+<p><strong>Role:</strong> webserver  </p>
+<p><strong>Status:</strong> &#226;œ… All Tests Passing</p>
+</body>
+</html>
