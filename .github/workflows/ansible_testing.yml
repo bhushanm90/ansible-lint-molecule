@@ -38,6 +38,8 @@ jobs:
     test-ansible-molecule:
         runs-on: ubuntu-latest
         needs: test-ansible-lint
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
         steps:
         - uses: actions/checkout@v4
 
@@ -46,14 +48,17 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y python3-pip
             sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint molecule "molecule-plugins[docker]"
-            ansible-galaxy collection install community.docker
+            mkdir -p "${ANSIBLE_COLLECTIONS_PATH}"
+            ansible-galaxy collection install community.docker \
+              --collections-path "${ANSIBLE_COLLECTIONS_PATH}"
 
         - name: Verify Ansible and Molecule versions
           run: |
             ansible --version
             python3 -c "import ansible; print(ansible.__version__)"
             molecule --version
-            ansible-galaxy collection list community.docker
+            test -f "${ANSIBLE_COLLECTIONS_PATH}/ansible_collections/community/docker/MANIFEST.json"
+            ansible-galaxy collection list --collections-path "${ANSIBLE_COLLECTIONS_PATH}" community.docker
 
         - name: runner user
           run: |
