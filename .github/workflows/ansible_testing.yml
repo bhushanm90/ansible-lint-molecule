@@ -1,4 +1,4 @@
-name: Testing Ansible code with ansible-lint & Molecule
+name: Test Ansible code with ansible-lint & Molecule
 
 on: 
   push: 
