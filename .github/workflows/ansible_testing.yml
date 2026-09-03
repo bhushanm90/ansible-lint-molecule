@@ -60,6 +60,11 @@ jobs:
         runs-on: [self-hosted, linux, x64]
         needs: test-ansible-molecule
         steps:
+          - name: install jq package
+            run: |
+               apt-get update
+               apt-get install -y jq
+
           - name: Launch AWX job template
             env:
               AWX_URL: ${{ vars.AWX_URL }}
