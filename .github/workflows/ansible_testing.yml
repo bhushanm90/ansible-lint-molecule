@@ -130,12 +130,8 @@ jobs:
         steps:
           - name: Show nginx web URL
             run: |
-              echo "Nginx web URL: $NGINX_URL"
-              {
-                echo "## Nginx web URL"
-                echo "[$NGINX_URL]($NGINX_URL)"
-              } >> "$GITHUB_STEP_SUMMARY"
-
+              echo "Nginx web URL: $NGINX_URL:$PORT"
+          
           - name: Test nginx web URL
             run: |
               sleep 10  # Wait for the service to start
