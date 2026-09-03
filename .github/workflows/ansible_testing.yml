@@ -49,7 +49,8 @@ jobs:
             sudo apt-get install -y python3-pip
             sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint molecule "molecule-plugins[docker]"
             mkdir -p "${ANSIBLE_COLLECTIONS_PATH}"
-            ansible-galaxy collection install community.docker \
+            ansible-galaxy collection install community.docker:3.10.2 \
+              --force \
               --collections-path "${ANSIBLE_COLLECTIONS_PATH}"
 
         - name: Verify Ansible and Molecule versions
@@ -57,7 +58,8 @@ jobs:
             ansible --version
             python3 -c "import ansible; print(ansible.__version__)"
             molecule --version
-            ansible-galaxy collection list
+            find "${ANSIBLE_COLLECTIONS_PATH}" -maxdepth 4 -name MANIFEST.json -print
+            ansible-galaxy collection list --collections-path "${ANSIBLE_COLLECTIONS_PATH}" community.docker
             ansible-doc community.docker.docker_container
 
         - name: runner user
