@@ -44,7 +44,7 @@ jobs:
         - name: Install Ansible and Molecule
           run: |
             sudo apt-get update
-            sudo apt-get install -y docker.io python3-pip
+            sudo apt-get install -y python3-pip
             sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint molecule "molecule-plugins[docker]"
 
         - name: Verify Ansible and Molecule versions
@@ -59,17 +59,16 @@ jobs:
             id
             id -Gn
      
-        - name: Start Docker and verify daemon
+        - name: Verify Docker daemon
           run: |
-            sudo systemctl start docker || sudo service docker start
-            sudo docker info
+            docker info
 
         - name: Run Molecule tests
           env:
             ANSIBLE_ROLES_PATH: ${{ github.workspace }}/roles
           run: |
             cd "${{ env.ANSIBLE_ROLES_PATH }}/webserver"
-            sudo -E env "ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH}" molecule test
+            molecule test
 
     deploy-awx-template:
         runs-on: ubuntu-latest
