@@ -17,10 +17,17 @@ jobs:
         steps:
         - uses: actions/checkout@v4
 
-        - name: Install Ansible
+        - name: Install Ansible lint
           run: |
-            sudo apt update
-            sudo apt install -y ansible-lint
+            sudo apt-get update
+            sudo apt-get install -y python3-pip
+            sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint
+
+        - name: Verify Ansible versions
+          run: |
+            ansible --version
+            ansible-lint --version
+            python3 -c "import ansible; print(ansible.__version__)"
 
         - name: Run ansible-lint
           env:
@@ -38,7 +45,13 @@ jobs:
           run: |
             sudo apt-get update
             sudo apt-get install -y docker.io python3-pip
-            sudo python3 -m pip install --break-system-packages --ignore-installed ansible ansible-lint molecule "molecule-plugins[docker]"
+            sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint molecule "molecule-plugins[docker]"
+
+        - name: Verify Ansible and Molecule versions
+          run: |
+            ansible --version
+            python3 -c "import ansible; print(ansible.__version__)"
+            molecule --version
 
         - name: runner user
           run: |
