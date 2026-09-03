@@ -57,7 +57,7 @@ jobs:
             sudo -E env "ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH}" molecule test
 
     deploy-awx-template:
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted, linux, x64]
         needs: test-ansible-molecule
         steps:
           - name: Launch AWX job template
@@ -78,7 +78,7 @@ jobs:
                 -d "$payload"
 
     test_nginx_web_url:
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted, linux, x64]
         needs: deploy-awx-template
         env:
           AWX_URL: ${{ vars.AWX_URL }}
