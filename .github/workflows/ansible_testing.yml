@@ -51,7 +51,7 @@ jobs:
             cd "${{ env.ANSIBLE_ROLES_PATH }}/webserver"
             sudo -E env "ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH}" molecule test
 
-      deploy-awx-template:
+    deploy-awx-template:
         runs-on: ubuntu-latest
         needs: test-ansible-molecule
         steps:
