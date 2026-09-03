@@ -72,16 +72,55 @@ jobs:
               AWX_TEMPLATE_ID: ${{ vars.AWX_TEMPLATE_ID }}
               AWX_ROLE_NAME: ${{ inputs.role_name || 'webserver' }}
             run: |
+              set -euo pipefail
+
               payload=$(jq -n \
                 --arg role_name "$AWX_ROLE_NAME" \
                 '{extra_vars: {role_name: $role_name}}')
 
-              curl --fail --silent --show-error -X POST \
+              launch_response=$(curl --fail --silent --show-error -X POST \
                 "$AWX_URL/api/v2/job_templates/$AWX_TEMPLATE_ID/launch/" \
                 -H "Authorization: Bearer $AWX_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "$payload"
+                -d "$payload")
 
+              job_id=$(jq -r '.job // .id // empty' <<<"$launch_response")
+              if [[ -z "$job_id" ]]; then
+                echo "AWX did not return a job ID. Response: $launch_response"
+                exit 1
+              fi
+
+              echo "AWX job $job_id launched. Waiting for completion..."
+              for attempt in {1..60}; do
+                job_response=$(curl --fail --silent --show-error \
+                  "$AWX_URL/api/v2/jobs/$job_id/" \
+                  -H "Authorization: Bearer $AWX_TOKEN")
+                job_status=$(jq -r '.status // empty' <<<"$job_response")
+                echo "AWX job $job_id status: $job_status"
+
+                case "$job_status" in
+                  successful)
+                    exit 0
+                    ;;
+                  failed|error|canceled)
+                    echo "AWX job $job_id finished with status: $job_status"
+                    curl --fail --silent --show-error \
+                      "$AWX_URL/api/v2/jobs/$job_id/stdout/?format=txt" \
+                      -H "Authorization: Bearer $AWX_TOKEN" || true
+                    exit 1
+                    ;;
+                  pending|waiting|running|new)
+                    sleep 10
+                    ;;
+                  *)
+                    echo "Unexpected AWX job status: $job_status"
+                    exit 1
+                    ;;
+                esac
+              done
+
+              echo "Timed out waiting for AWX job $job_id after 10 minutes."
+              exit 1
     test_nginx_web_url:
         runs-on: [self-hosted, linux, x64]
         needs: deploy-awx-template
