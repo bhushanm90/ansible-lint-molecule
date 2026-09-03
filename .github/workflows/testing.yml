@@ -1,0 +1,11 @@
+name: testing
+on: 
+    push:
+    workflow_dispatch:
+
+jobs:
+    testing_wf_dispatch:
+        runs-on: ubuntu-latest
+        steps:
+        - run: echo "This workflow is triggered by workflow_dispatch event."
+        
