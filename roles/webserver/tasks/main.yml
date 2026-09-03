@@ -20,8 +20,23 @@
         src: nginx.conf
         dest: /etc/nginx/nginx.conf
         mode: '0644'
+      notify: Reload nginx
+
+    - name: Disable the default nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Configure nginx webserver port
+      ansible.builtin.template:
+        src: webserver.conf.j2
+        dest: /etc/nginx/conf.d/webserver.conf
+        mode: '0644'
+      notify: Reload nginx
 
     - name: Start nginx
       ansible.builtin.service:
         name: nginx
         state: started
+        enabled: true

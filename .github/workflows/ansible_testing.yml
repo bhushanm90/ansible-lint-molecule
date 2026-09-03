@@ -86,20 +86,21 @@ jobs:
         runs-on: [self-hosted, linux, x64]
         needs: deploy-awx-template
         env:
-          AWX_URL: ${{ vars.AWX_URL }}
+          NGINX_URL: ${{ vars.NGINX_URL }}
+          PORT: '8080'
         steps:
           - name: Show nginx web URL
             run: |
-              echo "Nginx web URL: $AWX_URL"
+              echo "Nginx web URL: $NGINX_URL"
               {
                 echo "## Nginx web URL"
-                echo "[$AWX_URL]($AWX_URL)"
+                echo "[$NGINX_URL]($NGINX_URL)"
               } >> "$GITHUB_STEP_SUMMARY"
 
           - name: Test nginx web URL
             run: |
               sleep 10  # Wait for the service to start
-              if curl -s --head $AWX_URL | grep "200 OK" > /dev/null; then
+              if curl -s --head "$NGINX_URL:$PORT" | grep "200 OK" > /dev/null; then
                 echo "Nginx is running and accessible."
               else
                 echo "Nginx is not accessible."
