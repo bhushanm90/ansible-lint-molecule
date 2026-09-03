@@ -63,7 +63,7 @@ jobs:
           - name: install jq package
             run: |
                apt-get update
-               apt-get install -y jq
+               apt-get install -y jq curl
 
           - name: Launch AWX job template
             env:
