@@ -8,10 +8,12 @@ on:
         description: "Role name to pass as AWX extra var"
         required: false
         default: "webserver"
-    
+permissions:
+  contents: write
+      
 jobs:
     test-ansible-lint:
-        runs-on: [self-hosted, linux, x64]
+        runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@v4
 
