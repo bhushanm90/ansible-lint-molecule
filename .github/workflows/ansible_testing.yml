@@ -45,8 +45,13 @@ jobs:
 
         - name: Install Ansible and Molecule
           run: |
-            pipx inject ansible-core \
-              ansible-compat ansible-lint molecule requests "molecule-plugins[docker]"
+            pipx runpip ansible-core install --upgrade --force-reinstall \
+              "ansible-core==2.19.4" \
+              "ansible-compat==25.1.5" \
+              "ansible-lint==25.1.2" \
+              "molecule==25.5.0" \
+              "requests" \
+              "molecule-plugins[docker]==25.5.0"
             echo "/opt/pipx/venvs/ansible-core/bin" >> "$GITHUB_PATH"
             mkdir -p "${ANSIBLE_COLLECTIONS_PATH}"
             /opt/pipx/venvs/ansible-core/bin/ansible-galaxy collection install \
