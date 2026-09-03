@@ -51,7 +51,7 @@ jobs:
               "ansible-lint==25.1.2" \
               "molecule==25.5.0" \
               "requests" \
-              "molecule-plugins[docker]==25.5.0"
+              "molecule-plugins[docker]==25.8.12"
             echo "/opt/pipx/venvs/ansible-core/bin" >> "$GITHUB_PATH"
             mkdir -p "${ANSIBLE_COLLECTIONS_PATH}"
             /opt/pipx/venvs/ansible-core/bin/ansible-galaxy collection install \
