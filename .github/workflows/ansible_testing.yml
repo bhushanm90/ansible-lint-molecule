@@ -47,8 +47,9 @@ jobs:
           run: |
             sudo apt-get update
             sudo apt-get install -y python3-pip
-            sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint molecule "molecule-plugins[docker]"
-            pipx inject ansible-core requests
+            sudo python3 -m pip install --upgrade --force-reinstall --break-system-packages \
+              ansible-core ansible-compat ansible-lint molecule requests "molecule-plugins[docker]"
+            echo "/usr/local/bin" >> "$GITHUB_PATH"
             mkdir -p "${ANSIBLE_COLLECTIONS_PATH}"
             ansible-galaxy collection install \
               community.docker:3.10.2 \
@@ -58,6 +59,7 @@ jobs:
 
         - name: Verify Ansible and Molecule versions
           run: |
+            which -a ansible ansible-playbook molecule
             ansible --version
             ansible localhost -m ansible.builtin.setup -a 'filter=ansible_python*' -c local
             python3 -c "import ansible; print(ansible.__version__)"
