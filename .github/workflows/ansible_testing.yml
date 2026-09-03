@@ -57,8 +57,8 @@ jobs:
             ansible --version
             python3 -c "import ansible; print(ansible.__version__)"
             molecule --version
-            test -f "${ANSIBLE_COLLECTIONS_PATH}/ansible_collections/community/docker/MANIFEST.json"
-            ansible-galaxy collection list --collections-path "${ANSIBLE_COLLECTIONS_PATH}" community.docker
+            ansible-galaxy collection list
+            ansible-doc community.docker.docker_container
 
         - name: runner user
           run: |
