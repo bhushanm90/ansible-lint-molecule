@@ -45,13 +45,11 @@ jobs:
 
         - name: Install Ansible and Molecule
           run: |
-            sudo apt-get update
-            sudo apt-get install -y python3-pip
-            sudo python3 -m pip install --upgrade --force-reinstall --break-system-packages \
-              ansible-core ansible-compat ansible-lint molecule requests "molecule-plugins[docker]"
-            echo "/usr/local/bin" >> "$GITHUB_PATH"
+            pipx inject ansible-core \
+              ansible-compat ansible-lint molecule requests "molecule-plugins[docker]"
+            echo "/opt/pipx/venvs/ansible-core/bin" >> "$GITHUB_PATH"
             mkdir -p "${ANSIBLE_COLLECTIONS_PATH}"
-            ansible-galaxy collection install \
+            /opt/pipx/venvs/ansible-core/bin/ansible-galaxy collection install \
               community.docker:3.10.2 \
               ansible.posix:1.4.0 \
               --force \
@@ -62,8 +60,8 @@ jobs:
             which -a ansible ansible-playbook molecule
             ansible --version
             ansible localhost -m ansible.builtin.setup -a 'filter=ansible_python*' -c local
-            python3 -c "import ansible; print(ansible.__version__)"
-            molecule --version
+            /opt/pipx/venvs/ansible-core/bin/python -c "import ansible, ansible_compat, molecule, requests; print(ansible.__version__)"
+            /opt/pipx/venvs/ansible-core/bin/molecule --version
             find "${ANSIBLE_COLLECTIONS_PATH}" -maxdepth 4 -name MANIFEST.json -print
             ansible-galaxy collection list --collections-path "${ANSIBLE_COLLECTIONS_PATH}"
             ansible-doc community.docker.docker_container
@@ -83,7 +81,7 @@ jobs:
             ANSIBLE_ROLES_PATH: ${{ github.workspace }}/roles
           run: |
             cd "${{ env.ANSIBLE_ROLES_PATH }}/webserver"
-            molecule test
+            /opt/pipx/venvs/ansible-core/bin/molecule test
 
     deploy-awx-template:
         runs-on: ubuntu-latest
