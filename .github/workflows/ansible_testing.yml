@@ -46,16 +46,14 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y python3-pip
             sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint molecule "molecule-plugins[docker]"
-            mkdir -p "$RUNNER_TEMP/ansible-collections"
-            ansible-galaxy collection install community.docker \
-              --collections-path "$RUNNER_TEMP/ansible-collections"
-            echo "ANSIBLE_COLLECTIONS_PATH=$RUNNER_TEMP/ansible-collections" >> "$GITHUB_ENV"
+            ansible-galaxy collection install community.docker
 
         - name: Verify Ansible and Molecule versions
           run: |
             ansible --version
             python3 -c "import ansible; print(ansible.__version__)"
             molecule --version
+            ansible-galaxy collection list community.docker
 
         - name: runner user
           run: |
@@ -101,6 +99,14 @@ jobs:
         env:
           AWX_URL: ${{ vars.AWX_URL }}
         steps:
+          - name: Show nginx web URL
+            run: |
+              echo "Nginx web URL: $AWX_URL"
+              {
+                echo "## Nginx web URL"
+                echo "[$AWX_URL]($AWX_URL)"
+              } >> "$GITHUB_STEP_SUMMARY"
+
           - name: Test nginx web URL
             run: |
               sleep 10  # Wait for the service to start
