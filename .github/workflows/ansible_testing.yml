@@ -50,3 +50,48 @@ jobs:
           run: |
             cd "${{ env.ANSIBLE_ROLES_PATH }}/webserver"
             sudo -E env "ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH}" molecule test
+
+      deploy-awx-template:
+        runs-on: ubuntu-latest
+        needs: test-ansible-molecule
+        steps:
+          - name: Launch AWX job template
+            env:
+              AWX_URL: ${{ vars.AWX_URL }}
+              AWX_TOKEN: ${{ secrets.AWX_TOKEN }}
+              AWX_TEMPLATE_ID: ${{ vars.AWX_TEMPLATE_ID }}
+              AWX_ROLE_NAME: ${{ inputs.role_name || 'webserver' }}
+            run: |
+              payload=$(jq -n \
+                --arg role_name "$AWX_ROLE_NAME" \
+                '{extra_vars: {role_name: $role_name}}')
+
+              curl --fail --silent --show-error -X POST \
+                "$AWX_URL/api/v2/job_templates/$AWX_TEMPLATE_ID/launch/" \
+                -H "Authorization: Bearer $AWX_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$payload"
+
+    test_nginx_web_url:
+        runs-on: ubuntu-latest
+        needs: deploy-awx-template
+        env:
+          AWX_URL: ${{ vars.AWX_URL }}
+        steps:
+          - name: Show nginx web URL
+            run: |
+              echo "Nginx web URL: $AWX_URL"
+              {
+                echo "## Nginx web URL"
+                echo "[$AWX_URL]($AWX_URL)"
+              } >> "$GITHUB_STEP_SUMMARY"
+
+          - name: Test nginx web URL
+            run: |
+              sleep 10  # Wait for the service to start
+              if curl -s --head $AWX_URL | grep "200 OK" > /dev/null; then
+                echo "Nginx is running and accessible."
+              else
+                echo "Nginx is not accessible."
+                exit 1
+              fi
