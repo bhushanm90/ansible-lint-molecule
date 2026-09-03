@@ -45,16 +45,18 @@ jobs:
 
         - name: Install Ansible and Molecule
           run: |
-            pipx runpip ansible-core install --upgrade --force-reinstall \
+            pipx install --force --suffix=-molecule \
               "ansible-core==2.19.4" \
+              --pip-args="--no-cache-dir"
+            pipx inject ansible-core-molecule \
               "ansible-compat==25.1.5" \
               "ansible-lint==25.1.2" \
               "molecule==25.5.0" \
               "requests" \
               "molecule-plugins[docker]==25.8.12"
-            echo "/opt/pipx/venvs/ansible-core/bin" >> "$GITHUB_PATH"
+            echo "/opt/pipx/venvs/ansible-core-molecule/bin" >> "$GITHUB_PATH"
             mkdir -p "${ANSIBLE_COLLECTIONS_PATH}"
-            /opt/pipx/venvs/ansible-core/bin/ansible-galaxy collection install \
+            /opt/pipx/venvs/ansible-core-molecule/bin/ansible-galaxy collection install \
               community.docker:3.10.2 \
               ansible.posix:1.4.0 \
               --force \
@@ -65,8 +67,8 @@ jobs:
             which -a ansible ansible-playbook molecule
             ansible --version
             ansible localhost -m ansible.builtin.setup -a 'filter=ansible_python*' -c local
-            /opt/pipx/venvs/ansible-core/bin/python -c "import ansible, ansible_compat, molecule, requests; print(ansible.__version__)"
-            /opt/pipx/venvs/ansible-core/bin/molecule --version
+            /opt/pipx/venvs/ansible-core-molecule/bin/python -c "import ansible, ansible_compat, molecule, requests; print(ansible.__version__)"
+            /opt/pipx/venvs/ansible-core-molecule/bin/molecule --version
             find "${ANSIBLE_COLLECTIONS_PATH}" -maxdepth 4 -name MANIFEST.json -print
             ansible-galaxy collection list --collections-path "${ANSIBLE_COLLECTIONS_PATH}"
             ansible-doc community.docker.docker_container
@@ -86,7 +88,7 @@ jobs:
             ANSIBLE_ROLES_PATH: ${{ github.workspace }}/roles
           run: |
             cd "${{ env.ANSIBLE_ROLES_PATH }}/webserver"
-            /opt/pipx/venvs/ansible-core/bin/molecule test
+            /opt/pipx/venvs/ansible-core-molecule/bin/molecule test
 
     deploy-awx-template:
         runs-on: ubuntu-latest
