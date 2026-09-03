@@ -31,9 +31,9 @@ jobs:
 
         - name: Run ansible-lint
           env:
-            ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+            ANSIBLE_ROLES_PATH: ${{ github.workspace }}/roles
           run: |
-            ansible-lint ${{env.ANSIBLE_ROLES_PATH}}/webserver --exclude=./ansible/roles/webserver/molecule
+            ansible-lint "${ANSIBLE_ROLES_PATH}/webserver" --exclude="${ANSIBLE_ROLES_PATH}/webserver/molecule"
 
     test-ansible-molecule:
         runs-on: [self-hosted, linux, x64]
@@ -66,7 +66,7 @@ jobs:
 
         - name: Run Molecule tests
           env:
-            ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+            ANSIBLE_ROLES_PATH: ${{ github.workspace }}/roles
           run: |
             cd "${{ env.ANSIBLE_ROLES_PATH }}/webserver"
             sudo -E env "ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH}" molecule test
