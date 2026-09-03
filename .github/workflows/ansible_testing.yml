@@ -46,6 +46,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y python3-pip
             sudo python3 -m pip install --upgrade --break-system-packages ansible-core ansible-lint molecule "molecule-plugins[docker]"
+            ansible-galaxy collection install community.docker
 
         - name: Verify Ansible and Molecule versions
           run: |
