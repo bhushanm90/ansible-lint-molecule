@@ -1,4 +1,15 @@
-# Molecule Testing - Complete Guide
+<h1 align="center">Molecule Testing - Complete Guide</h1>
+
+<p align="center">
+  <img
+    src="images/molecule-logo.png"
+    alt="Molecule testing logo"
+    width="250"
+  />
+</p>
+
+
+![Molecule testing lifecycle](images/molecule-lifecycle.png)
 
 ## Overview
 Molecule is an Ansible testing framework that automates role testing by:
@@ -527,6 +538,9 @@ STEP 3: Service registration
 
 ## Test Results Summary
 
+
+![Molecule test results](images/molecule-test-results.png)
+
 ### Success Metrics:
 
 ```
@@ -551,12 +565,14 @@ IDEMPOTENCE TEST
 
 | Metric | Result |
 |--------|--------|
-| Total Actions | 12 |
-| Successful | 6 |
-| Failed | 0 |
-| Skipped | 0 |
-| Missing (optional) | 7 |
-| Status | ✅ PASSED |
+| Test phases described | 12 |
+| Convergence status | ✅ Passed |
+| Idempotence status | ✅ Passed |
+| Failed tasks | 0 |
+| First-run changes | 4 |
+| Second-run changes | 0 |
+| Optional phases not configured | Prepare, side_effect, verify, cleanup |
+| Final status | ✅ PASSED |
 
 ---
 
