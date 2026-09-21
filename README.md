@@ -1,4 +1,4 @@
-<h1 align="center">Molecule Testing - Complete Guide</h1>
+<h1 align="center">Ansible Lint & Molecule Testing – GitHub Action CI/CD POC</h1>
 
 <p align="center">
   <img
