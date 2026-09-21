@@ -1,6 +1,12 @@
 <h1 align="center">Molecule Testing - Complete Guide</h1>
 
-![Molecule logo](images/molecule-logo.png)
+<p align="center">
+  <img
+    src="images/molecule-logo.png"
+    alt="Molecule logo"
+    width="180"
+  />
+</p>
 
 ![Molecule testing lifecycle](images/molecule-lifecycle.png)
 
