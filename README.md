@@ -2,6 +2,13 @@
 
 <p align="center">
   <img
+    src="https://img.shields.io/badge/Supported%20OS-Debian%20Family-A81D33?logo=debian&logoColor=white"
+    alt="Supported operating systems: Debian family"
+  />
+</p>
+
+<p align="center">
+  <img
     src="images/molecule-logo.png"
     alt="Molecule logo"
     width="180"
